@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tsx src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc && npm run copy-files",
+    "build": "npx tsc",
+"copy-files": "npx copyfiles -u 1 src/**/*.html src/**/*.css dist/",
     "copy-files": "copyfiles -u 1 src/**/*.html dist/",
     "typecheck": "tsc --noEmit"
   },
