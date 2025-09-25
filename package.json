@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Naxilon Backend API for contact form",
   "scripts": {
-    "start": "node server.js",
+    "start": "tsx src/server.ts",
     "dev": "node server.js"
   },
   "dependencies": {
