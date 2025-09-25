@@ -1,40 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 
-// ES modules mein __dirname ka alternative
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Manual environment variables loading with BOM handling
-const envPath = path.resolve(__dirname, '..', '.env');
-console.log('Loading env from:', envPath);
-
-if (fs.existsSync(envPath)) {
-  let envFile = fs.readFileSync(envPath, 'utf8');
-  
-  if (envFile.charCodeAt(0) === 0xFEFF) {
-    envFile = envFile.substring(1);
-    console.log('Removed BOM from .env file');
-  }
-  
-  envFile.split('\n').forEach(line => {
-    const trimmedLine = line.trim();
-    if (trimmedLine && !trimmedLine.startsWith('#')) {
-      const [key, ...values] = trimmedLine.split('=');
-      if (key && values.length > 0) {
-        const value = values.join('=').trim();
-        const cleanValue = value.replace(/^['"](.*)['"]$/, '$1');
-        process.env[key.trim()] = cleanValue;
-        console.log(`Set env: ${key.trim()}=${cleanValue}`);
-      }
-    }
-  });
-} else {
-  console.error('.env file not found at:', envPath);
-}
+// Load environment variables
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -52,15 +24,13 @@ app.use(cors({
 
 app.use(express.json());
 
-// Import mailer function
-const sendContactEmail = async (formData: any) => {
+// Email sending function
+const sendContactEmail = async (formData) => {
   try {
-    const nodemailer = await import('nodemailer');
-    
-    const transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransporter({
       host: 'smtp.ionos.com',
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false,
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -127,18 +97,31 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Health check
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
-    status: 'Server is running!',
-    emailUser: process.env.EMAIL_USER,
-    nodeEnv: process.env.NODE_ENV
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'Naxilon Backend API is running',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      contact: '/api/contact'
+    }
+  });
+});
+
+// Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📧 Email user: ${process.env.EMAIL_USER}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
-  console.log(`🔑 Password set: ${process.env.EMAIL_PASS ? 'Yes' : 'No'}`);
+  console.log(`📧 Email configured for: ${process.env.EMAIL_USER}`);
+  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
 });
