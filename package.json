@@ -4,10 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx src/server.ts",
-    "start": "node dist/server.js",
-    "build": "npx tsc",
-"copy-files": "npx copyfiles -u 1 src/**/*.html src/**/*.css dist/",
-    "copy-files": "copyfiles -u 1 src/**/*.html dist/",
+    "start": "tsx src/server.ts",
+    "build": "npx tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -20,9 +18,7 @@
     "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
     "@types/nodemailer": "^6.4.14",
-    "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
-    "typescript": "^5.5.3",
-    "copyfiles": "^2.4.1"
+    "typescript": "^5.5.3"
   }
 }
