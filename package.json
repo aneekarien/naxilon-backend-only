@@ -1,11 +1,11 @@
 {
   "name": "naxilon-backend",
   "version": "1.0.0",
-  "type": "module",
-  "description": "Naxilon Backend API for contact form",
+  "description": "Naxilon Backend API for Contact Form",
+  "main": "app.js",
   "scripts": {
-    "start": "tsx src/server.ts",
-    "dev": "node server.js"
+    "start": "node app.js",
+    "dev": "node app.js"
   },
   "dependencies": {
     "express": "^4.18.2",
