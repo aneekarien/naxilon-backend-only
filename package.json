@@ -2,11 +2,10 @@
   "name": "naxilon-backend",
   "version": "1.0.0",
   "type": "module",
+  "description": "Naxilon Backend API for contact form",
   "scripts": {
-    "dev": "tsx src/server.ts",
-    "start": "tsx src/server.ts",
-    "build": "npx tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -14,11 +13,10 @@
     "nodemailer": "^6.9.7",
     "dotenv": "^16.3.1"
   },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/cors": "^2.8.17",
-    "@types/nodemailer": "^6.4.14",
-    "tsx": "^4.20.5",
-    "typescript": "^5.5.3"
-  }
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["naxilon", "backend", "api", "contact-form"],
+  "author": "Naxilon Team",
+  "license": "MIT"
 }
