@@ -5,14 +5,14 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ SIMPLE CORS - Bilkul basic
+// ✅ SIMPLE CORS
 app.use(cors());
 
 // ✅ Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Health check - Pehla endpoint
+// ✅ Health check
 app.get('/api/health', (req, res) => {
     console.log('✅ Health check called');
     res.json({ 
@@ -33,14 +33,14 @@ app.get('/', (req, res) => {
     });
 });
 
-// ✅ Contact form endpoint
+// ✅ Contact form endpoint - FIXED
 app.post('/api/contact', async (req, res) => {
     console.log('📧 Contact form received');
     
     try {
         const { name, email, phone, country, stateCity, message } = req.body;
 
-        // ✅ Basic validation
+        // ✅ Validation
         if (!name || !email || !message) {
             return res.status(400).json({ 
                 success: false, 
@@ -50,11 +50,11 @@ app.post('/api/contact', async (req, res) => {
 
         console.log('📧 Processing contact form for:', name, email);
 
-        // ✅ IONOS SMTP configuration (Port 587 - Most reliable)
-        const transporter = nodemailer.createTransporter({
+        // ✅ CORRECT FUNCTION NAME: createTransport (not createTransporter)
+        const transporter = nodemailer.createTransport({
             host: 'smtp.ionos.com',
             port: 587,
-            secure: false, // false for port 587
+            secure: false,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
@@ -64,7 +64,7 @@ app.post('/api/contact', async (req, res) => {
             }
         });
 
-        // ✅ Simple email content
+        // ✅ Email content
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: process.env.EMAIL_USER,
@@ -105,13 +105,12 @@ app.use('*', (req, res) => {
     res.status(404).json({ message: 'Route not found' });
 });
 
-// ✅ Server start with 0.0.0.0 for Railway
+// ✅ Server start
 app.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 ========================================');
     console.log('🚀 Naxilon Backend Server Started');
     console.log('🚀 ========================================');
     console.log(`📍 Port: ${PORT}`);
-    console.log(`🌐 Environment: ${process.env.NODE_ENV || 'production'}`);
     console.log('✅ Server is ready and waiting for requests...');
     console.log('🚀 ========================================');
 });
