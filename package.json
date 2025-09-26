@@ -1,11 +1,12 @@
 {
   "name": "naxilon-backend",
   "version": "1.0.0",
-  "description": "Naxilon Backend API for Contact Form",
+  "description": "Naxilon Backend API for Contact Form with IONOS SMTP",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "dev": "node app.js"
+    "dev": "node app.js",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -14,9 +15,21 @@
     "dotenv": "^16.3.1"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
-  "keywords": ["naxilon", "backend", "api", "contact-form"],
+  "keywords": [
+    "naxilon",
+    "backend",
+    "api",
+    "contact-form",
+    "ionos",
+    "smtp"
+  ],
   "author": "Naxilon Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/naxilon/naxilon-backend"
+  }
 }
