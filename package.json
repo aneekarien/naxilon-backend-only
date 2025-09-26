@@ -1,7 +1,7 @@
 {
   "name": "naxilon-backend",
   "version": "1.0.0",
-  "description": "Naxilon Backend API",
+  "description": "Naxilon Backend API for Contact Form",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -14,5 +14,8 @@
   },
   "engines": {
     "node": ">=16.0.0"
-  }
+  },
+  "keywords": ["naxilon", "backend", "api", "contact-form"],
+  "author": "Naxilon Team",
+  "license": "MIT"
 }
