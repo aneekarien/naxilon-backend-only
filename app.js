@@ -6,70 +6,115 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS setup for naxilon.com
+// ✅ IMPROVED CORS Configuration
 app.use(cors({
-  origin: [
-    'https://naxilon.com',
-    'https://www.naxilon.com',
-    'http://localhost:5173'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'https://naxilon.com',
+      'https://www.naxilon.com',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://naxilon-backend-only-production.up.railway.app'
+    ];
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-app.use(express.json());
+// Handle preflight requests
+app.options('*', cors());
 
-// Health check endpoint
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ✅ IMPROVED Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
     message: '🚀 Naxilon Backend Server is healthy and running!',
     timestamp: new Date().toISOString(),
-    status: 'operational'
+    status: 'operational',
+    environment: process.env.NODE_ENV || 'production',
+    port: PORT
   });
 });
 
-// Root endpoint
+// ✅ IMPROVED Root endpoint
 app.get('/', (req, res) => {
   res.json({ 
     message: 'Welcome to Naxilon Backend API',
     version: '1.0.0',
+    status: 'active',
     endpoints: {
-      health: '/api/health',
-      contact: '/api/contact'
-    }
+      health: 'GET /api/health',
+      contact: 'POST /api/contact'
+    },
+    documentation: 'See /api/health for server status'
   });
 });
 
-// Contact form endpoint
+// ✅ IMPROVED Contact form endpoint with better error handling
 app.post('/api/contact', async (req, res) => {
+  // Set CORS headers explicitly
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   try {
     const { name, email, phone, country, stateCity, message } = req.body;
 
-    // Validation
+    console.log('📧 Contact form submission received:', { 
+      name: name?.substring(0, 10) + '...', 
+      email: email?.substring(0, 10) + '...' 
+    });
+
+    // ✅ BETTER Validation
     if (!name || !email || !message) {
       return res.status(400).json({ 
         success: false, 
+        error: 'VALIDATION_ERROR',
         message: 'Name, email, and message are required fields.' 
       });
     }
 
-    console.log('📧 Contact form submission received:', { name, email });
-
-    // Email transporter configuration
+    // ✅ FIXED Email transporter configuration (IONOS SMTP)
     const transporter = nodemailer.createTransporter({
       host: 'smtp.ionos.com',
-      port: 587,
-      secure: false,
+      port: 465, // ✅ Changed to 465 for SSL
+      secure: true, // ✅ true for port 465
       auth: {
-        user: process.env.EMAIL_USER,
+        user: process.env.EMAIL_USER || 'info@naxilon.com',
         pass: process.env.EMAIL_PASS,
       },
+      tls: {
+        rejectUnauthorized: false // ✅ Important for Railway
+      }
     });
 
-    // Email content
+    // Verify transporter configuration
+    await transporter.verify(function (error, success) {
+      if (error) {
+        console.log('❌ SMTP Connection Error:', error);
+        throw new Error('SMTP configuration error: ' + error.message);
+      } else {
+        console.log('✅ SMTP Server is ready to send messages');
+      }
+    });
+
+    // ✅ IMPROVED Email content
     const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: process.env.EMAIL_USER,
+      from: process.env.EMAIL_USER || 'info@naxilon.com',
+      to: process.env.EMAIL_USER || 'info@naxilon.com',
       replyTo: email,
       subject: `Naxilon Contact Form: ${name}`,
       html: `
@@ -98,33 +143,72 @@ app.post('/api/contact', async (req, res) => {
     };
 
     // Send email
-    await transporter.sendMail(mailOptions);
+    const info = await transporter.sendMail(mailOptions);
     
-    console.log('✅ Email sent successfully to:', process.env.EMAIL_USER);
+    console.log('✅ Email sent successfully! Message ID:', info.messageId);
     
     res.json({ 
       success: true, 
-      message: 'Thank you! Your message has been sent successfully. We will get back to you soon.' 
+      message: 'Thank you! Your message has been sent successfully. We will get back to you soon.',
+      messageId: info.messageId
     });
     
   } catch (error) {
     console.error('❌ Email sending failed:', error);
     
+    // ✅ BETTER Error response
     res.status(500).json({ 
       success: false, 
-      message: 'Sorry, there was an error sending your message. Please try again later or contact us directly at info@naxilon.com.' 
+      error: 'EMAIL_SEND_FAILED',
+      message: 'Sorry, there was an error sending your message. Please try again later or contact us directly at info@naxilon.com.',
+      detail: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log('🚀 ========================================');
+// ✅ 404 Handler for undefined routes
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    availableEndpoints: {
+      health: 'GET /api/health',
+      contact: 'POST /api/contact'
+    }
+  });
+});
+
+// ✅ Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('🚨 Server Error:', error);
+  res.status(500).json({
+    success: false,
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+  });
+});
+
+// ✅ Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('\n🚀 ========================================');
   console.log('🚀 Naxilon Backend Server Started');
   console.log('🚀 ========================================');
   console.log(`📍 Port: ${PORT}`);
-  console.log(`📧 Email: ${process.env.EMAIL_USER}`);
+  console.log(`📧 Email: ${process.env.EMAIL_USER || 'info@naxilon.com'}`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'production'}`);
-  console.log(`✅ Health Check: http://localhost:${PORT}/api/health`);
-  console.log('🚀 ========================================');
+  console.log(`🔧 Node Version: ${process.version}`);
+  console.log('✅ Health Check: /api/health');
+  console.log('✅ Contact Endpoint: /api/contact');
+  console.log('🚀 ========================================\n');
+});
+
+// ✅ Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 SIGINT received, shutting down gracefully');
+  process.exit(0);
 });
