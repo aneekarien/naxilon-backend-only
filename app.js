@@ -5,14 +5,12 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ SIMPLE CORS
+// CORS
 app.use(cors());
-
-// ✅ Body parser
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Health check
+// Health check
 app.get('/api/health', (req, res) => {
     console.log('✅ Health check called');
     res.json({ 
@@ -22,7 +20,7 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// ✅ Root endpoint
+// Root endpoint
 app.get('/', (req, res) => {
     console.log('✅ Root endpoint called');
     res.json({ 
@@ -33,14 +31,14 @@ app.get('/', (req, res) => {
     });
 });
 
-// ✅ Contact form endpoint - FIXED
+// ✅✅✅ CONTACT ENDPOINT - IONOS KE LIYE OPTIMIZED ✅✅✅
 app.post('/api/contact', async (req, res) => {
     console.log('📧 Contact form received');
     
     try {
         const { name, email, phone, country, stateCity, message } = req.body;
 
-        // ✅ Validation
+        // Validation
         if (!name || !email || !message) {
             return res.status(400).json({ 
                 success: false, 
@@ -50,41 +48,59 @@ app.post('/api/contact', async (req, res) => {
 
         console.log('📧 Processing contact form for:', name, email);
 
-        // ✅ CORRECT FUNCTION NAME: createTransport (not createTransporter)
+        // ✅ IONOS SMTP CONFIGURATION (EXACT SETTINGS)
         const transporter = nodemailer.createTransport({
             host: 'smtp.ionos.com',
             port: 587,
-            secure: false,
+            secure: false, // false for TLS
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS,
+                user: process.env.EMAIL_USER, // info@naxilon.com
+                pass: process.env.EMAIL_PASS, // Khurram8174657296!!
             },
             tls: {
+                // IONOS specific settings
+                ciphers: 'SSLv3',
                 rejectUnauthorized: false
-            }
+            },
+            // Connection settings
+            connectionTimeout: 30000, // 30 seconds
+            greetingTimeout: 30000,
+            socketTimeout: 30000,
+            // Debugging
+            debug: true,
+            logger: true
         });
 
-        // ✅ Email content
+        // Verify connection first
+        console.log('🔧 Verifying SMTP connection...');
+        await transporter.verify();
+        console.log('✅ SMTP connection verified');
+
+        // Email content
         const mailOptions = {
-            from: process.env.EMAIL_USER,
+            from: `"Naxilon Website" <${process.env.EMAIL_USER}>`,
             to: process.env.EMAIL_USER,
-            subject: `Naxilon Contact: ${name}`,
+            replyTo: email,
+            subject: `Naxilon Contact Form: ${name}`,
             html: `
-                <h3>New Contact Form Submission</h3>
-                <p><strong>Name:</strong> ${name}</p>
-                <p><strong>Email:</strong> ${email}</p>
-                <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
-                <p><strong>Country:</strong> ${country || 'Not provided'}</p>
-                <p><strong>State/City:</strong> ${stateCity || 'Not provided'}</p>
-                <p><strong>Message:</strong> ${message}</p>
-                <hr>
-                <p><em>Received: ${new Date().toLocaleString()}</em></p>
+                <div style="font-family: Arial, sans-serif; max-width: 600px;">
+                    <h2 style="color: #0E1E3A;">New Contact Form Submission</h2>
+                    <p><strong>Name:</strong> ${name}</p>
+                    <p><strong>Email:</strong> ${email}</p>
+                    <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+                    <p><strong>Country:</strong> ${country || 'Not provided'}</p>
+                    <p><strong>State/City:</strong> ${stateCity || 'Not provided'}</p>
+                    <p><strong>Message:</strong> ${message}</p>
+                    <hr>
+                    <p><em>Received: ${new Date().toLocaleString()}</em></p>
+                </div>
             `
         };
 
-        // ✅ Send email
-        await transporter.sendMail(mailOptions);
-        console.log('✅ Email sent successfully');
+        // Send email
+        console.log('📤 Sending email...');
+        const info = await transporter.sendMail(mailOptions);
+        console.log('✅ Email sent successfully:', info.messageId);
         
         res.json({ 
             success: true, 
@@ -93,19 +109,32 @@ app.post('/api/contact', async (req, res) => {
         
     } catch (error) {
         console.error('❌ Email error:', error);
+        
+        // Better error message
+        let errorMessage = 'Server error. Please try again later.';
+        
+        if (error.code === 'ETIMEDOUT') {
+            errorMessage = 'Connection to email server timed out.';
+        } else if (error.code === 'ECONNREFUSED') {
+            errorMessage = 'Cannot connect to email server.';
+        } else if (error.response) {
+            errorMessage = `Email server error: ${error.response}`;
+        }
+        
         res.status(500).json({ 
             success: false, 
-            message: 'Server error. Please try again later.' 
+            message: errorMessage,
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });
 
-// ✅ 404 handler
+// 404 handler
 app.use('*', (req, res) => {
     res.status(404).json({ message: 'Route not found' });
 });
 
-// ✅ Server start
+// Server start
 app.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 ========================================');
     console.log('🚀 Naxilon Backend Server Started');
