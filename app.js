@@ -42,7 +42,7 @@ app.get('/', (req, res) => {
     });
 });
 
-// ✅✅✅ CONTACT ENDPOINT - UPDATED WITH BETTER ERROR HANDLING ✅✅✅
+// ✅✅✅ CONTACT ENDPOINT - UPDATED FOR GMAIL SMTP ✅✅✅
 app.post('/api/contact', async (req, res) => {
     console.log('📧 Contact form received');
     
@@ -59,15 +59,14 @@ app.post('/api/contact', async (req, res) => {
 
         console.log('📧 Processing contact form for:', name, email);
 
-        // ✅ IONOS SMTP CONFIGURATION - UPDATED WITH MULTIPLE OPTIONS
+        // ✅ GMAIL SMTP CONFIGURATION - UPDATED FOR RAILWAY
         const smtpConfig = {
-            // Try primary configuration first
-            host: 'smtp.ionos.com',
-            port: 465, // ✅ IONOS recommended SSL port
-            secure: true, // ✅ SSL enabled for port 465
+            host: 'smtp.gmail.com',
+            port: 587, // ✅ Gmail recommended TLS port
+            secure: false, // ✅ false for port 587
             auth: {
-                user: process.env.EMAIL_USER || 'info@naxilon.com',
-                pass: process.env.EMAIL_PASS,
+                user: process.env.EMAIL_USER || 'naxilonllc@gmail.com',
+                pass: process.env.EMAIL_PASS || 'Khurram8174657296!!',
             },
             tls: {
                 rejectUnauthorized: false // ✅ Important for Railway
@@ -84,31 +83,23 @@ app.post('/api/contact', async (req, res) => {
         const transporter = nodemailer.createTransport(smtpConfig);
 
         // ✅ Verify connection with better error handling
-        console.log('🔧 Verifying SMTP connection to IONOS...');
+        console.log('🔧 Verifying SMTP connection to Gmail...');
         try {
             await transporter.verify();
-            console.log('✅ SMTP connection verified successfully');
+            console.log('✅ Gmail SMTP connection verified successfully');
         } catch (verifyError) {
-            console.error('❌ SMTP verification failed:', verifyError);
-            
-            // Try alternative configuration if primary fails
-            console.log('🔄 Trying alternative SMTP configuration...');
-            const altConfig = {
-                ...smtpConfig,
-                host: 'smtp.ionos.com',
-                port: 587, // Alternative port
-                secure: false, // TLS for port 587
-            };
-            
-            const altTransporter = nodemailer.createTransport(altConfig);
-            await altTransporter.verify();
-            console.log('✅ Alternative SMTP connection verified');
+            console.error('❌ Gmail SMTP verification failed:', verifyError);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Email service configuration error. Please try again later.',
+                error: 'SMTP_VERIFICATION_FAILED'
+            });
         }
 
         // ✅ Email content with better formatting
         const mailOptions = {
-            from: `"Naxilon Website" <${process.env.EMAIL_USER || 'info@naxilon.com'}>`,
-            to: process.env.EMAIL_USER || 'info@naxilon.com',
+            from: `"Naxilon Website" <${process.env.EMAIL_USER || 'naxilonllc@gmail.com'}>`,
+            to: process.env.EMAIL_USER || 'naxilonllc@gmail.com',
             replyTo: email,
             subject: `Naxilon Contact Form Submission: ${name}`,
             html: `
@@ -171,9 +162,9 @@ Source: https://naxilon.com
         };
 
         // ✅ Send email with detailed logging
-        console.log('📤 Attempting to send email...');
+        console.log('📤 Attempting to send email via Gmail...');
         const info = await transporter.sendMail(mailOptions);
-        console.log('✅ Email sent successfully! Message ID:', info.messageId);
+        console.log('✅ Email sent successfully via Gmail! Message ID:', info.messageId);
         console.log('✅ Email response:', info.response);
         
         // ✅ Success response
@@ -187,17 +178,17 @@ Source: https://naxilon.com
         console.error('❌ Email sending failed:', error);
         
         // ✅ Detailed error handling
-        let errorMessage = 'Sorry, there was an error sending your message. Please try again later or contact us directly at info@naxilon.com.';
+        let errorMessage = 'Sorry, there was an error sending your message. Please try again later or contact us directly at naxilonllc@gmail.com.';
         let errorCode = 'EMAIL_SEND_FAILED';
         
         if (error.code === 'ETIMEDOUT') {
-            errorMessage = 'Connection to email server timed out. This might be a temporary issue. Please try again in a few minutes.';
+            errorMessage = 'Connection to Gmail server timed out. This might be a temporary issue. Please try again in a few minutes.';
             errorCode = 'CONNECTION_TIMEOUT';
         } else if (error.code === 'ECONNREFUSED') {
-            errorMessage = 'Unable to connect to email server. Please try again later.';
+            errorMessage = 'Unable to connect to Gmail server. Please try again later.';
             errorCode = 'CONNECTION_REFUSED';
         } else if (error.responseCode) {
-            errorMessage = `Email server error (${error.responseCode}). Please try again.`;
+            errorMessage = `Gmail server error (${error.responseCode}). Please try again.`;
             errorCode = 'SMTP_ERROR';
         }
         
@@ -241,7 +232,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('🚀 Naxilon Backend Server Started');
     console.log('🚀 ========================================');
     console.log(`📍 Port: ${PORT}`);
-    console.log(`📧 Email: ${process.env.EMAIL_USER || 'info@naxilon.com'}`);
+    console.log(`📧 Email: ${process.env.EMAIL_USER || 'naxilonllc@gmail.com'}`);
     console.log(`🌐 Environment: ${process.env.NODE_ENV || 'production'}`);
     console.log(`🔧 Node Version: ${process.version}`);
     console.log('✅ Health Check: /api/health');
